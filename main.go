@@ -1,19 +1,47 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
+	"strings"
 
 	pipe "gopkg.in/pipe.v2"
 )
 
+type Config struct {
+	GDBPath       string `json:"gdb_path"`
+	OpenOCDOption string `json:"openocd_option"`
+	OpenOCDPath   string `json:"openocd_path"`
+}
+
 func main() {
+	file, err := ioutil.ReadFile("gdb_wrapper.json")
+	if err != nil {
+		fmt.Println("cat't load gdb_wrapper.json")
+		os.Exit(1)
+	}
+
+	config := Config{}
+
+	err = json.Unmarshal(file, &config)
+	if err != nil {
+		fmt.Println("gdb_wrapper.json Unmarshal error")
+		panic(err)
+	}
+
 	openocdKillChan := make(chan struct{})
 	fmt.Println("OpenOCD")
-	openocdParams := []string{"-s", "c:\\openocd\\tcl", "-f", "interface/stlink-v2.cfg", "-f", "target/stm32l4x.cfg"}
-	openocdCmd := exec.Command("openocd", openocdParams...)
-	openocdCmd.Start()
+	openocdParams := strings.Split(config.OpenOCDOption, " ")
+	//openocdParams := []string{"-s", "c:\\openocd\\tcl", "-f", "interface/stlink-v2.cfg", "-f", "target/stm32l4x.cfg"}
+	openocdCmd := exec.Command(config.OpenOCDPath, openocdParams...)
+	err = openocdCmd.Start()
+	if err != nil {
+		fmt.Println("OpenOCD launch fail")
+		panic(err)
+	}
 	defer openocdCmd.Process.Kill()
 
 	go func() {
@@ -32,7 +60,7 @@ func main() {
 		gdbArgs[i-1] = v
 	}
 
-	gdbCmd := exec.Command("C:\\gcc-arm\\bin\\arm-none-eabi-gdb.exe", gdbArgs...)
+	gdbCmd := exec.Command(config.GDBPath, gdbArgs...)
 
 	gdbStdin, err := gdbCmd.StdinPipe()
 	gdbStdout, err := gdbCmd.StdoutPipe()

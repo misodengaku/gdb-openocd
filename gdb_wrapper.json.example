@@ -1,0 +1,5 @@
+{
+	"openocd_path": "C:\\openocd\\openocd.exe",
+	"openocd_option": "-s c:\\openocd\\tcl -f interface/stlink-v2.cfg -f target/stm32f4x.cfg",
+	"gdb_path": "C:\\arm\\bin\\arm-none-eabi-gdb.exe"
+}
