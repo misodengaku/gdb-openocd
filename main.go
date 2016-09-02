@@ -21,6 +21,7 @@ func main() {
 		// Target voltage
 		<-openocdKillChan
 		openocdCmd.Process.Kill()
+		fmt.Println("OpenOCD killed.")
 	}()
 
 	gdbArgs := make([]string, len(os.Args)-1)
@@ -51,10 +52,12 @@ func main() {
 			)
 
 			if err = pipe.Run(stdinPipe); err != nil {
+				openocdKillChan <- struct{}{}
 				panic(err)
 			}
 			if s, err := pipe.Output(stdinPipe); err != nil {
 				fmt.Println(s)
+				openocdKillChan <- struct{}{}
 				panic(err)
 			}
 		}
@@ -67,13 +70,16 @@ func main() {
 				pipe.Write(os.Stdout),
 			)
 			if err = pipe.Run(stdoutPipe); err != nil {
+				openocdKillChan <- struct{}{}
 				panic(err)
 			}
 			if s, err := pipe.Output(stdoutPipe); err != nil {
 				fmt.Println(s)
+				openocdKillChan <- struct{}{}
 				panic(err)
 			}
 		}
 	}()
 	gdbCmd.Wait()
+	openocdKillChan <- struct{}{}
 }
