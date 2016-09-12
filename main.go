@@ -32,6 +32,12 @@ func main() {
 		panic(err)
 	}
 
+	// cleanup
+	taskkillCmd := exec.Command("taskkill.exe", "/F", "/IM", "openocd.exe")
+	err = taskkillCmd.Start()
+	taskkillCmd.Wait()
+	fmt.Println("Cleanup complete.")
+
 	openocdKillChan := make(chan struct{})
 	fmt.Println("OpenOCD")
 	openocdParams := strings.Split(config.OpenOCDOption, " ")
